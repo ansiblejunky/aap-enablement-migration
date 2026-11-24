@@ -3,7 +3,7 @@
 
 # AAP Migration Lab
 
-This repository prepares a source Ansible Automation Platform environment so Red Hat employees can test and teach migration. The demo catalog below is the workload loaded onto that source environment before a migration. A later web wizard will check the source environment and advise which target environments are supported. Instructions for the base topology will be added separately.
+This repository prepares a source Ansible Automation Platform environment so Red Hat employees can test and teach migration. The demo catalog below is the workload loaded onto that source environment before a migration. The [migration wizard](wizard/README.md) checks that controller and shows which target environments are supported. Instructions for the base topology will be added separately.
 
 The content is deployed as configuration-as-code. On the controller it creates an organization and project named **AAP Migration Lab**, then the demo job templates and inventories.
 
@@ -22,6 +22,16 @@ The content is deployed as configuration-as-code. On the controller it creates a
 ## Demo catalog
 
 Browse all demos, presenter guides, and walkthroughs on the **[Ansible Product Demos — GitHub Pages site](https://ansible.github.io/product-demos/)**.
+
+## Migration wizard
+
+From a clone of this repository:
+
+```bash
+python3 wizard/server.py
+```
+
+Open http://127.0.0.1:8765/ and point it at the source automation controller. The page reads `/api/v2/` and walks through a supported upgrade or migration. Details are in [wizard/README.md](wizard/README.md).
 
 ## Installation
 

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; base-uri 'none'; form-action 'self'">
+  <title>Migration wizard · AAP Migration Lab</title>
+  <link rel="stylesheet" href="/wizard.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="app">
+    <header class="top">
+      <div class="brand">
+        <span class="mark" aria-hidden="true">AAP</span>
+        <div>
+          <p class="eyebrow">AAP Migration Lab</p>
+          <h1>Migration wizard</h1>
+        </div>
+      </div>
+      <div class="top__actions">
+        <p class="top__note">Local page. Credentials stay in this tab.</p>
+        <button class="theme-toggle" id="theme-toggle" type="button">Light mode</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <nav class="stepper" aria-label="Wizard steps">
+        <ol>
+          <li><button type="button" data-goto="1">1 · Connect</button></li>
+          <li><button type="button" data-goto="2" disabled>2 · Findings</button></li>
+          <li><button type="button" data-goto="3" disabled>3 · Pre-check</button></li>
+          <li><button type="button" data-goto="4" disabled>4 · Targets</button></li>
+          <li><button type="button" data-goto="5" disabled>5 · Walkthrough</button></li>
+          <li><button type="button" data-goto="6" disabled>6 · Validate</button></li>
+        </ol>
+      </nav>
+
+      <main id="main">
+        <p id="banner" class="banner" role="status" hidden></p>
+
+        <section data-step="1" id="step-connect">
+          <h2>Connect to the source controller</h2>
+          <p class="lead">
+            Log in to the automation controller that hosts this lab. The page reads
+            <code>/api/v2/</code> through the local server, then asks for the four
+            facts that API does not report.
+          </p>
+          <form id="connect-form" method="post" action="/connect" autocomplete="off">
+            <label class="field">
+              <span>Controller URL</span>
+              <input
+                name="url"
+                type="url"
+                required
+                inputmode="url"
+                spellcheck="false"
+                placeholder="https://controller.example.com"
+                autocomplete="off"
+              >
+            </label>
+            <fieldset>
+              <legend>Login</legend>
+              <label class="choice">
+                <input type="radio" name="auth_mode" value="token" checked>
+                <span>Existing token</span>
+              </label>
+              <label class="choice">
+                <input type="radio" name="auth_mode" value="password">
+                <span>Username and password</span>
+              </label>
+            </fieldset>
+            <div id="token-fields">
+              <label class="field">
+                <span>Bearer token</span>
+                <input name="token" type="password" autocomplete="new-password" spellcheck="false">
+              </label>
+            </div>
+            <div id="password-fields" hidden>
+              <label class="field">
+                <span>Username</span>
+                <input name="username" type="text" autocomplete="off" spellcheck="false">
+              </label>
+              <label class="field">
+                <span>Password</span>
+                <input name="password" type="password" autocomplete="new-password">
+              </label>
+            </div>
+            <label class="choice">
+              <input name="verify_tls" type="checkbox" checked>
+              <span>Verify the controller TLS certificate</span>
+            </label>
+            <p class="hint">
+              Clear this for a lab controller with a self-signed certificate.
+              The login is held in this tab and forwarded only to the host above.
+              The local server does not save it.
+            </p>
+            <button class="primary" id="connect-button" type="submit">Check the controller</button>
+          </form>
+        </section>
+
+        <section data-step="2" id="step-findings" hidden>
+          <h2>What the controller reported</h2>
+          <div id="findings"></div>
+          <form id="questions" method="post" action="/advise">
+            <h3>Facts the API does not report</h3>
+            <p class="hint">
+              Installer type, the RHEL major version, private automation hub, and
+              Event-Driven Ansible are outside <code>/api/v2/</code>. Advice waits
+              until these are answered.
+            </p>
+            <fieldset>
+              <legend>How is this platform installed?</legend>
+              <label class="choice"><input type="radio" name="installer" value="rpm" required><span>RPM</span></label>
+              <label class="choice"><input type="radio" name="installer" value="operator"><span>OpenShift operator</span></label>
+              <label class="choice"><input type="radio" name="installer" value="containerized"><span>Containerized</span></label>
+            </fieldset>
+            <label class="field" for="rhel">
+              <span>RHEL major version of the RPM or container hosts</span>
+              <select id="rhel" name="rhel">
+                <option value="">Not applicable</option>
+                <option value="8">RHEL 8</option>
+                <option value="9">RHEL 9</option>
+                <option value="10">RHEL 10</option>
+              </select>
+            </label>
+            <fieldset>
+              <legend>Is private automation hub part of this deployment?</legend>
+              <label class="choice"><input type="radio" name="hub" value="yes" required><span>Yes</span></label>
+              <label class="choice"><input type="radio" name="hub" value="no"><span>No</span></label>
+            </fieldset>
+            <fieldset>
+              <legend>Is Event-Driven Ansible installed on AAP 2.4?</legend>
+              <label class="choice"><input type="radio" name="eda" value="yes" required><span>Yes</span></label>
+              <label class="choice"><input type="radio" name="eda" value="no"><span>No</span></label>
+            </fieldset>
+            <p id="question-error" class="banner banner--error" role="alert" hidden></p>
+            <button class="primary" id="advise-button" type="submit">Continue to pre-check</button>
+          </form>
+        </section>
+
+        <section data-step="3" id="step-precheck" hidden>
+          <h2>Pre-check</h2>
+          <p class="lead">
+            Run the installer preflight before choosing an upgrade plan. The
+            controller version comes from the API. Operating system, capacity,
+            mounts, subscription, and firewall ports are measured on the hosts
+            and scored here. The port list changes with the AAP version.
+          </p>
+          <form id="precheck-form" method="post" action="/precheck">
+            <label class="field" for="precheck-target">
+              <span>Requirements to score</span>
+              <select id="precheck-target" name="target">
+                <option value="rpm-2.6-growth">AAP 2.6 RPM growth</option>
+                <option value="rpm-2.6-enterprise">AAP 2.6 RPM enterprise</option>
+                <option value="rpm-2.4">AAP 2.4 RPM</option>
+              </select>
+            </label>
+            <fieldset>
+              <legend>Host measurement</legend>
+              <div class="host-grid">
+                <label class="field"><span>Name</span><input id="host-name" name="host_name" type="text" placeholder="controller.lab" autocomplete="off"></label>
+                <label class="field">
+                  <span>Role</span>
+                  <select id="host-role" name="host_role">
+                    <option value="automationgateway">Platform gateway</option>
+                    <option value="automationcontroller">Automation controller</option>
+                    <option value="automationhub">Automation hub</option>
+                    <option value="database">Database</option>
+                    <option value="execution">Execution node</option>
+                    <option value="automationedacontroller">Event-Driven Ansible</option>
+                  </select>
+                </label>
+                <label class="field"><span>RHEL version</span><input id="host-rhel" name="host_rhel" type="text" placeholder="9.5" autocomplete="off"></label>
+                <label class="field"><span>CPU</span><input id="host-cpu" name="host_cpu" type="number" min="0" step="1"></label>
+                <label class="field"><span>RAM GB</span><input id="host-memory" name="host_memory" type="number" min="0" step="1"></label>
+                <label class="field"><span>Disk GB</span><input id="host-disk" name="host_disk" type="number" min="0" step="1"></label>
+                <label class="field"><span>noexec mounts</span><input id="host-noexec" name="host_noexec" type="text" placeholder="/tmp or none" autocomplete="off"></label>
+                <label class="field"><span>Open ports</span><input id="host-ports" name="host_ports" type="text" placeholder="22, 443, 5432" autocomplete="off"></label>
+              </div>
+              <div class="host-grid">
+                <label class="field"><span>Hostname is localhost</span><select id="host-localhost"><option value="">Not measured</option><option value="yes">Yes</option><option value="no">No</option></select></label>
+                <label class="field"><span>Subscription registered</span><select id="host-registered"><option value="">Not measured</option><option value="yes">Yes</option><option value="no">No</option></select></label>
+                <label class="field"><span>Custom virtual environments</span><select id="host-venv"><option value="">Not measured</option><option value="yes">Present</option><option value="no">None</option></select></label>
+                <label class="field"><span>Schema migrate check</span><select id="host-schema"><option value="">Not measured</option><option value="yes">Passed</option><option value="no">Failed</option></select></label>
+              </div>
+              <button class="secondary" id="add-host" type="button">Add host</button>
+              <div id="host-list"></div>
+            </fieldset>
+            <p id="precheck-error" class="banner banner--error" role="alert" hidden></p>
+            <div class="card__actions">
+              <button class="primary" id="precheck-button" type="submit">Run pre-check</button>
+              <button class="secondary" id="continue-targets" type="button">Show supported targets</button>
+            </div>
+          </form>
+          <div id="precheck-results"></div>
+        </section>
+
+        <section data-step="4" id="step-targets" hidden>
+          <h2>Supported targets</h2>
+          <div id="targets"></div>
+        </section>
+
+        <section data-step="5" id="step-walk" hidden>
+          <h2>Walkthrough</h2>
+          <div id="walkthrough"></div>
+        </section>
+
+        <section data-step="6" id="step-validate" hidden>
+          <h2>Validate the lab workload</h2>
+          <p class="lead">
+            This reads the controller again. It does not launch a job or run the
+            upgrade. After the move, connect to the target and check once more.
+            A 2.5 or later platform answers on <code>/api/controller/v2/</code>.
+          </p>
+          <div id="validate"></div>
+          <button class="primary" id="recheck" type="button">Check again</button>
+        </section>
+      </main>
+    </div>
+  </div>
+  <noscript><p>This wizard needs JavaScript in the browser.</p></noscript>
+  <script src="/wizard.js"></script>
+</body>
+</html>
